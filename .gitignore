@@ -34,3 +34,8 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Newman-generated reports
+/reports/
+/postman/newman.xml
+/postman/newman-report.html
