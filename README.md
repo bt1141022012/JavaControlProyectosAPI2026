@@ -81,3 +81,22 @@ Para detener y eliminar los contenedores después de las pruebas, sin borrar el 
 ```bash
 docker compose down
 ```
+
+## Análisis de seguridad con OWASP ZAP
+
+El overlay inicia sesión como el administrador semilla, aplica el JWT a las solicitudes y ejecuta el escaneo de API contra OpenAPI en modo seguro (`-S`), sin pruebas activas. En una base nueva, inicia primero la API y carga el administrador:
+
+```bash
+docker compose -f compose.yaml -f compose.seed.yaml up --build -d
+```
+
+Ejecuta el análisis como tarea puntual:
+
+```bash
+docker compose \
+  -f compose.yaml \
+  -f compose.zap.yaml \
+  run --rm --no-deps zap
+```
+
+Los reportes HTML y JSON se guardan en `zap/reports/zap-report.html` y `zap/reports/zap-report.json`. Revisa los hallazgos antes de usar cualquier modo de escaneo activo.

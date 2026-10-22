@@ -39,3 +39,4 @@ build/
 /postman/newman.xml
 /postman/newman-report.html
 /k6/reports/
+/zap/reports/
