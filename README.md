@@ -55,7 +55,7 @@ Si cambias la contraseña inicial en `database/seed-admin.sql`, actualiza tambi�
 
 ## Prueba con k6
 
-El escenario inicia sesión con el administrador semilla y cada uno de los 50 usuarios virtuales crea 10 categorías con su token. En una base nueva, carga el administrador antes de la prueba:
+El escenario inicia sesión con el administrador semilla, crea 10 categorías y 100 proyectos como preparación, y luego genera 10.000 tareas con 100 usuarios virtuales concurrentes. Los datos quedan en la base; cada ejecución agrega otro lote. En una base nueva, carga el administrador antes de la prueba:
 
 ```bash
 docker compose -f compose.yaml -f compose.seed.yaml up --build -d
@@ -66,14 +66,14 @@ Ejecuta la prueba con:
 ```bash
 docker compose \
   -f compose.yaml \
-  -f compose.k6.yaml \
-  up --build --abort-on-container-exit --exit-code-from k6
+  -f compose.k6-data-load.yaml \
+  up --build --abort-on-container-exit --exit-code-from k6-data-load
 ```
 
-El dashboard en vivo queda disponible en `http://localhost:5665` mientras corre k6. Al finalizar, el reporte HTML se guarda en `k6/reports/k6-report.html`. La prueba requiere el seed porque inicia sesión como `admin`; cada ejecución agrega hasta 500 categorías. Para detener y eliminar los contenedores al finalizar:
+El dashboard en vivo queda disponible en `http://localhost:5665` mientras corre k6. Al finalizar, el reporte HTML se guarda en `k6/reports/data-load-report.html`. Puedes cambiar las cantidades con `K6_VUS`, `K6_CATEGORY_COUNT`, `K6_PROJECT_COUNT` y `K6_TASK_COUNT`. Para detener los contenedores sin borrar los datos persistentes:
 
 ```bash
-docker compose -f compose.yaml -f compose.k6.yaml down
+docker compose -f compose.yaml -f compose.k6-data-load.yaml down
 ```
 
 Para detener y eliminar los contenedores después de las pruebas, sin borrar el volumen de la base de datos:
@@ -81,6 +81,25 @@ Para detener y eliminar los contenedores después de las pruebas, sin borrar el 
 ```bash
 docker compose down
 ```
+
+### Carga de endpoints CRUD
+
+Este escenario inicia sesión como `admin`, recorre los endpoints de categorías, proyectos y tareas, y elimina los registros temporales al finalizar cada iteración. Requiere el administrador semilla; en una base nueva, levanta la API y el seed primero:
+
+```bash
+docker compose -f compose.yaml -f compose.seed.yaml up --build -d
+```
+
+Ejecuta la carga con:
+
+```bash
+docker compose \
+  -f compose.yaml \
+  -f compose.k6-api.yaml \
+  up --build --abort-on-container-exit --exit-code-from k6-api
+```
+
+La rampa sube a 100 VUs y mantiene esa carga durante 3 minutos. El dashboard está en `http://localhost:5667` y el reporte en `k6/reports/api-workflow-report.html`. Si se interrumpe el contenedor antes de completar una iteración, podrían quedar datos temporales en la base.
 
 ## Análisis de seguridad con OWASP ZAP
 
